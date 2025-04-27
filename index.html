@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text Selection Alert</title>
+  <style>
+    body {
+      font-family: sans-serif;
+            
+      padding: 20px;
+      margin: 0;
+    }
+    .container {
+      max-width: 100%;
+      padding: 10px;
+    }
+    .text-box {
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-radius: 8px;
+      font-size: 20px;
+      line-height: 1.6;
+    }
+    .button {
+      margin: 15px 5px;
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .button:hover {
+      background-color: #0056b3;
+    }
+    .btn-container{
+      display: flex;
+      flex-direction: row;
+    }
+    .modal {
+      display: block; /* Hidden by default */
+      position: fixed;
+      z-index: 3;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+    }
+    .empty_1{
+      width: 100%;
+      height: 20px;
+    }
+    .modal-content {
+      background-color: #fff;
+      margin: 15% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 300px;
+      border-radius: 8px;
+      position: relative;
+    }
+    .container1{
+      max-height: 65dvh;
+      overflow: scroll;
+    }
+     .close {
+      color: #aaa;
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+     .highlight{
+      color: blue;
+    }
+    .container1{
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="btn-container">
+      
+    <button class="button" onclick="pastetext()">Paste</button>
+    <button class="button" id="send_btn">Send</button>
+    </div>
+    <div id="textDiv" class="text-box">
+      
+    </div>
+    
+  </div>
+  
+   <!-- Modal for displaying result -->
+  <div id="myModal2" class="modal">
+    <div class="modal-content mtop">
+      <span id="modal-close" class="close">×</span>
+      <div class="empty_1">
+        
+      </div>
+      <div class="container1">
+        
+      
+      <b id="result_text">Damn, why has no one talking about the GLM-4 series ? 
+This model performs incredibly well on benchmarks and in real-world use.
+
+GLM-4-32B-0414
+GLM-Z1-32B-0414
+GLM-Z1-Rumination-32B-0414
+GLM-Z1-9B-0414 – Free
+GLM-4-9B-0414 – Free</b>
+</div>
+     
+    </div>
+  </div>
+
+  <script>
+    let text1=`Damn, why has no one talking about the GLM-4 series ? 
+This model performs incredibly well on benchmarks and in real-world use.
+
+GLM-4-32B-0414
+GLM-Z1-32B-0414
+GLM-Z1-Rumination-32B-0414
+GLM-Z1-9B-0414 – Free
+GLM-4-9B-0414 – Free`;
+    let text_div = document.getElementById("textDiv");
+    let sendbtn = document.getElementById("send_btn");
+    const result_text = document.getElementById("result_text");
+    const modal2 = document.getElementById("myModal2");
+    const closeModal2 = document.getElementsByClassName("close")[0];
+    let textContent="";
+    closeModal2.onclick = function() {
+      modal2.style.display = "none";
+    };
+     
+     window.onload = function() {
+          text_div.textContent = text1;
+          
+    // Your code here
+};
+
+    function convertToHTML(input) {
+  // Replace **...** with <p>...</p>
+  let htmlOutput = input.replace(/\*\*(.*?)\*\*/g, '<b class="highlight">$1</b>');
+  htmlOutput= htmlOutput.replaceAll('*','ℹ️');
+  htmlOutput= htmlOutput.replaceAll('\n','<br>');
+  return htmlOutput;
+};
+    async function pastetext(){
+  try {
+    const permission = await navigator.permissions.query({ name: 'clipboard-read' });
+    if (permission.state === 'granted' || permission.state === 'prompt') {
+       text1 = await navigator.clipboard.readText();
+      text_div.textContent = text1;
+   
+    } else {
+      alert("Clipboard permission not granted.");
+    }
+  } catch (err) {
+    console.error("Failed to access clipboard: ", err);
+    alert("Error: " + err.message);
+  }
+};
+    
+   
+      
+    async function getSelectedText() {
+  // code
+
+   
+      const selection = window.getSelection();
+      const selectedText = selection.toString();
+      if (selectedText.trim() !== "") {
+       // alert("Selected Text: " + selectedText);
+       window.getSelection().removeAllRanges();
+        // API logic start
+
+    // API URL and Key
+    const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyAi4eT8Dbpo15ZrC6dmBnWsE6uB8v-f32c";
+
+    // Request Payload
+    const payload = {
+        contents: [{
+            parts: [{ text: `What does the word '[${selectedText}]' mean in the following paragraph? The paragraph is: '[${text1}]'.` }]
+        }]
+    };
+
+    try {
+        // Perform POST Request
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        const data = await response.json();
+
+        // Extract the text content from the response
+        textContent = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No content found';
+        //alert(textContent);
+       result_text.innerHTML=convertToHTML(textContent);
+        modal2.style.display = "block";
+              
+    } catch (error) {
+        console.error("Error:", error);
+        alert("An error occurred while fetching the response.");
+    };
+    // api logic end
+      } else {
+        alert("Please select some text first.");
+      }
+    }
+    sendbtn.onclick=getSelectedText;
+  </script>
+
+</body>
+</html>
